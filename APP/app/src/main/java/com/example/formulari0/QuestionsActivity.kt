@@ -1,5 +1,6 @@
 package com.example.formulari0
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -23,6 +24,10 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import android.os.CountDownTimer
+import com.google.gson.Gson
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 class QuestionsActivity : ComponentActivity() {
     private lateinit var preguntas: List<Pregunta>
@@ -30,6 +35,9 @@ class QuestionsActivity : ComponentActivity() {
     private var correctAnswersCount: Int = 0 // Contador de respuestas correctas
     private lateinit var countDownTimer: CountDownTimer
     private var timeRemaining: Long = 30000 // 30 segundos
+
+    // HashMap para almacenar las estadísticas de las preguntas
+    private val preguntasStats: MutableMap<String, MutableMap<String, Int>> = mutableMapOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -156,7 +164,6 @@ class QuestionsActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     ShowXmlLayout()
-                    // Aquí puedes añadir un TextView para mostrar el tiempo restante
                     findViewById<TextView>(R.id.textViewTimer).text = "Tiempo restant: $secondsRemaining"
                 }
             }
@@ -164,20 +171,48 @@ class QuestionsActivity : ComponentActivity() {
     }
 
     private fun responder(selectedAnswer: Int) {
-        // Verifica si la respuesta seleccionada es correcta
-        if (selectedAnswer == preguntas[currentQuestionIndex].resposta_correcta) {
-            correctAnswersCount++ // Incrementa el contador de respuestas correctas
+        val preguntaActual = preguntas[currentQuestionIndex]
+        val esCorrecta = selectedAnswer == preguntaActual.resposta_correcta
+
+        // Actualizamos las estadísticas para la pregunta actual
+        val stats = preguntasStats.getOrPut(preguntaActual.pregunta) { mutableMapOf("correctas" to 0, "incorrectas" to 0) }
+        if (esCorrecta) {
+            correctAnswersCount++
+            stats["correctas"] = stats["correctas"]!! + 1
+        } else {
+            stats["incorrectas"] = stats["incorrectas"]!! + 1
         }
+
+        // Guardar las estadísticas en un archivo JSON después de cada respuesta
+        guardarEstadisticasEnJson()
 
         // Aumenta el índice de la pregunta actual
         currentQuestionIndex++
 
         // Muestra la siguiente pregunta o termina el cuestionario
         if (currentQuestionIndex < preguntas.size) {
-            mostrarPreguntaActual() // Muestra la siguiente pregunta
+            mostrarPreguntaActual()
         } else {
-            // Muestra la actividad de resultados cuando se terminen las preguntas
             mostrarResultados()
+        }
+    }
+
+    // Función para guardar estadísticas en un archivo JSON
+    private fun guardarEstadisticasEnJson() {
+        val gson = Gson()
+        val jsonString = gson.toJson(preguntasStats)
+
+        try {
+            val file = File(applicationContext.filesDir, "preguntas_stats.json")
+            val writer = FileWriter(file)
+            writer.write(jsonString)
+            writer.close()
+            println("Estadísticas guardadas en JSON exitosamente.")
+
+            // Imprime el JSON en la consola
+            println("Contenido del JSON: $jsonString")
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 
@@ -187,8 +222,8 @@ class QuestionsActivity : ComponentActivity() {
 
         // Muestra la actividad de resultados cuando se terminen las preguntas
         val intent = Intent(this, ResultsActivity::class.java).apply {
-            putExtra("correctes", correctAnswersCount) // Asegúrate de que esta clave sea la misma
-            putExtra("total", preguntas.size) // Asegúrate de que esta clave sea la misma
+            putExtra("correctes", correctAnswersCount)
+            putExtra("total", preguntas.size)
         }
         startActivity(intent)
         finish() // Termina esta actividad
