@@ -105,8 +105,10 @@ class QuestionsActivity : ComponentActivity() {
                         val currentQuestion = preguntas[currentQuestionIndex]
                         textViewQuestion.text = currentQuestion.pregunta
 
-                        // Carga la imagen desde la URL
-                        Picasso.get().load(currentQuestion.imagenUrl).into(imageViewQuestion)
+                        // Carga la imagen desde la URL usando Picasso
+                        Picasso.get()
+                            .load(currentQuestion.imatge)
+                            .into(imageViewQuestion)
 
                         // Asegúrate de que las respuestas tengan al menos 4 opciones
                         if (currentQuestion.respostes.size >= 4) {
@@ -139,7 +141,7 @@ class QuestionsActivity : ComponentActivity() {
 
             override fun onFinish() {
                 // Cuando el tiempo se agote, redirige a la pantalla de resultados
-                Toast.makeText(this@QuestionsActivity, "¡Tiempo agotado!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@QuestionsActivity, "¡Tiemps esgotat!", Toast.LENGTH_SHORT).show()
                 mostrarResultados()
             }
         }.start()
@@ -155,7 +157,7 @@ class QuestionsActivity : ComponentActivity() {
                 ) {
                     ShowXmlLayout()
                     // Aquí puedes añadir un TextView para mostrar el tiempo restante
-                    findViewById<TextView>(R.id.textViewTimer).text = "Tiempo restante: $secondsRemaining"
+                    findViewById<TextView>(R.id.textViewTimer).text = "Tiempo restant: $secondsRemaining"
                 }
             }
         }
@@ -185,8 +187,8 @@ class QuestionsActivity : ComponentActivity() {
 
         // Muestra la actividad de resultados cuando se terminen las preguntas
         val intent = Intent(this, ResultsActivity::class.java).apply {
-            putExtra("correctAnswersCount", correctAnswersCount) // Pasar el conteo de respuestas correctas
-            putExtra("totalQuestionsCount", preguntas.size) // Pasar el total de preguntas
+            putExtra("correctes", correctAnswersCount) // Asegúrate de que esta clave sea la misma
+            putExtra("total", preguntas.size) // Asegúrate de que esta clave sea la misma
         }
         startActivity(intent)
         finish() // Termina esta actividad

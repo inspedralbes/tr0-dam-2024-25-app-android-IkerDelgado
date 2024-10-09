@@ -7,4 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="background_color">#27B4C8</color> <!-- Color de fondo: un tono claro de naranja -->
+    <color name="background_resultats">#6200EE</color>
+    <color name="background_principal">#1BD1C1</color>
 </resources>

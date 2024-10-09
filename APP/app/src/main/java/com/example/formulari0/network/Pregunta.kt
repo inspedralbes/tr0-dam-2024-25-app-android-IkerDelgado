@@ -5,5 +5,5 @@ data class Pregunta(
     val pregunta: String,
     val respostes: List<String>,
     val resposta_correcta: Int,
-    val imagenUrl: String // Asegúrate de que esta propiedad esté presente
+    val imatge: String // Asegúrate de que esta propiedad esté presente
 )
