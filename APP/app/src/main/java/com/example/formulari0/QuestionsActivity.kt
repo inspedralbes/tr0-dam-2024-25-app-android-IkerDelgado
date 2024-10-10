@@ -24,6 +24,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import android.os.CountDownTimer
+import android.util.Log
 import com.google.gson.Gson
 import java.io.File
 import java.io.FileWriter
@@ -106,7 +107,7 @@ class QuestionsActivity : ComponentActivity() {
                     val buttonAnswer2 = findViewById<Button>(R.id.buttonAnswer2)
                     val buttonAnswer3 = findViewById<Button>(R.id.buttonAnswer3)
                     val buttonAnswer4 = findViewById<Button>(R.id.buttonAnswer4)
-                    val textViewTimer = findViewById<TextView>(R.id.textViewTimer) // Añade un TextView para mostrar el temporizador
+                    val textViewTimer = findViewById<TextView>(R.id.textViewTimer)
 
                     // Verifica si hay preguntas para mostrar
                     if (currentQuestionIndex < preguntas.size) {
@@ -149,7 +150,7 @@ class QuestionsActivity : ComponentActivity() {
 
             override fun onFinish() {
                 // Cuando el tiempo se agote, redirige a la pantalla de resultados
-                Toast.makeText(this@QuestionsActivity, "¡Tiemps esgotat!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@QuestionsActivity, "¡Temps esgotat!", Toast.LENGTH_SHORT).show()
                 mostrarResultados()
             }
         }.start()
@@ -163,8 +164,9 @@ class QuestionsActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ShowXmlLayout()
-                    findViewById<TextView>(R.id.textViewTimer).text = "Tiempo restant: $secondsRemaining"
+                    ShowXmlLayout() // Mantiene la vista actualizada
+                    // Muestra el tiempo restante
+                    findViewById<TextView>(R.id.textViewTimer).text = "Temps restant: $secondsRemaining"
                 }
             }
         }
@@ -174,8 +176,8 @@ class QuestionsActivity : ComponentActivity() {
         val preguntaActual = preguntas[currentQuestionIndex]
         val esCorrecta = selectedAnswer == preguntaActual.resposta_correcta
 
-        // Actualizamos las estadísticas para la pregunta actual
-        val stats = preguntasStats.getOrPut(preguntaActual.pregunta) { mutableMapOf("correctas" to 0, "incorrectas" to 0) }
+        // Actualizamos las estadísticas para la pregunta actual usando solo su ID
+        val stats = preguntasStats.getOrPut(preguntaActual.id.toString()) { mutableMapOf("correctas" to 0, "incorrectas" to 0) }
         if (esCorrecta) {
             correctAnswersCount++
             stats["correctas"] = stats["correctas"]!! + 1
@@ -186,18 +188,22 @@ class QuestionsActivity : ComponentActivity() {
         // Guardar las estadísticas en un archivo JSON después de cada respuesta
         guardarEstadisticasEnJson()
 
+        // Enviar estadísticas al servidor
+        enviarEstadisticasAlServidor()
+
         // Aumenta el índice de la pregunta actual
         currentQuestionIndex++
 
         // Muestra la siguiente pregunta o termina el cuestionario
         if (currentQuestionIndex < preguntas.size) {
-            mostrarPreguntaActual()
+            mostrarPreguntaActual() // Sigue mostrando la pregunta actual
         } else {
             mostrarResultados()
         }
     }
 
-    // Función para guardar estadísticas en un archivo JSON
+
+    // Función para guardar estadísticas en un archivo JSON local
     private fun guardarEstadisticasEnJson() {
         val gson = Gson()
         val jsonString = gson.toJson(preguntasStats)
@@ -215,6 +221,46 @@ class QuestionsActivity : ComponentActivity() {
             e.printStackTrace()
         }
     }
+
+    // Función para enviar estadísticas al servidor
+    private fun enviarEstadisticasAlServidor() {
+        val url = "http://192.168.0.160:3000/api/estadisticas" // Cambia esta URL según tu servidor
+
+        // Crear un objeto que representa la estructura que espera el servidor
+        val estadisticasEnviar = preguntasStats.map { (id, stats) ->
+            mapOf(
+                "id" to id,
+                "correctas" to stats["correctas"],
+                "incorrectas" to stats["incorrectas"]
+            )
+        }
+
+        // Convertir a JSON
+        val gson = Gson()
+        val statsJson = gson.toJson(estadisticasEnviar)
+
+        // Log para verificar el JSON que se está enviando
+        Log.d("QuestionsActivity", "Enviando estadísticas: $statsJson")
+
+        RetrofitClient.instance.enviarEstadisticas(url, statsJson).enqueue(object : Callback<Void> {
+            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                if (response.isSuccessful) {
+                    Log.d("QuestionsActivity", "Estadísticas enviadas correctamente: ${response.message()}")
+                } else {
+                    Log.e("QuestionsActivity", "Error al enviar estadísticas: ${response.message()}")
+                    response.errorBody()?.let {
+                        Log.e("QuestionsActivity", "Cuerpo del error: ${it.string()}")
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<Void>, t: Throwable) {
+                Log.e("QuestionsActivity", "Error de red al enviar estadísticas: ${t.message}")
+            }
+        })
+    }
+
+
 
     private fun mostrarResultados() {
         // Cancela el temporizador si está en ejecución
