@@ -224,7 +224,7 @@ class QuestionsActivity : ComponentActivity() {
 
     // Función para enviar estadísticas al servidor
     private fun enviarEstadisticasAlServidor() {
-        val url = "http://192.168.0.160:3000/api/estadisticas" // Cambia esta URL según tu servidor
+        val url = "http://a23ikedelgra.dam.inspedralbes.cat:29876/api/estadisticas" // Cambia esta URL según tu servidor
 
         // Crear un objeto que representa la estructura que espera el servidor
         val estadisticasEnviar = preguntasStats.map { (id, stats) ->
